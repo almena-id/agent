@@ -18,11 +18,17 @@ task init    # .env from .env.example; set ANTHROPIC_API_KEY in it
 task dev     # the agent on http://localhost:8100, with auto-reload
 task card    # its agent card
 task ask -- "What is a did:web identity?"
-task up      # the same, in Docker
+task up      # the same, in Docker, behind Caddy at https://$AGENT_DOMAIN
 task --list  # everything else
 ```
 
 With `ANTHROPIC_API_KEY` empty, `task dev` uses an `ant auth login` profile.
+
+`task up` also starts Caddy, which serves the agent at `https://$AGENT_DOMAIN`
+(`agent.almena.id` in `.env.example`) with a Let's Encrypt certificate. Point
+the name at this machine (in `/etc/hosts` for development); the certificate
+needs the domain's zone in Cloudflare and `CLOUDFLARE_API_TOKEN` (Zone / DNS /
+Edit) in `.env`. The agent still answers at `http://localhost:8100`.
 
 ## Endpoints
 
@@ -63,6 +69,8 @@ not shared between replicas.
 | `AGENT_HOST` | `127.0.0.1` | Interface to listen on (`0.0.0.0` in the image) |
 | `AGENT_PORT` | `8100` | Port to listen on (and the one Compose publishes) |
 | `AGENT_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Proxies whose `X-Forwarded-*` headers are trusted |
+| `AGENT_DOMAIN` | — | Domain of the deployment, for Docker Compose and Caddy only |
+| `CLOUDFLARE_API_TOKEN` | — | Caddy's DNS-01 challenge (Zone / DNS / Edit) |
 | `AGENT_PUBLIC_URL` | `https://agent.almena.id` | Public origin; the agent card's endpoints are under it |
 | `AGENT_NAME` | `Almena Agent` | The agent's name in its card |
 | `AGENT_DESCRIPTION` | `The AI agent of the Almena Network.` | Its description in the card |
@@ -78,14 +86,9 @@ not shared between replicas.
 ## Deployment
 
 The container listens on 8100 behind a TLS-terminating proxy for
-`agent.almena.id` that forwards everything to it. In `../develop`, that is a
-site like the others in its `Caddyfile`:
-
-```caddyfile
-{$AGENT_DOMAIN} {
-	reverse_proxy host.docker.internal:8100
-}
-```
+`agent.almena.id` that forwards everything to it: this project's Caddy
+(`Caddyfile`) when it runs alone; with the whole network, `../develop`'s,
+whose `task up` stops this one and serves `AGENT_DOMAIN` in its place.
 
 ## License
 

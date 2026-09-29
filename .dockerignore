@@ -11,3 +11,5 @@ tests
 Dockerfile
 compose.yml
 Taskfile.yml
+Caddyfile
+caddy

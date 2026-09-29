@@ -1,0 +1,14 @@
+# HTTPS in front of the agent for development, with a Let's Encrypt
+# certificate. The DNS-01 challenge is answered in the domain's Cloudflare zone
+# (CLOUDFLARE_API_TOKEN), so the machine need not be reachable. The site is
+# AGENT_DOMAIN (.env), passed in by compose.yml. With the whole network,
+# ../develop's Caddy replaces this one.
+{$AGENT_DOMAIN} {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+		# Check the challenge record through public resolvers: a local ISP
+		# resolver can cache NXDOMAIN for it and Caddy then never sees it land.
+		resolvers 1.1.1.1 8.8.8.8
+	}
+	reverse_proxy agent:8100
+}

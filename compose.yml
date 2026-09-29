@@ -24,3 +24,35 @@ services:
       AGENT_MAX_TOKENS: ${AGENT_MAX_TOKENS:-64000}
       AGENT_SYSTEM_PROMPT: ${AGENT_SYSTEM_PROMPT:-}
       AGENT_HISTORY_TURNS: ${AGENT_HISTORY_TURNS:-50}
+
+  caddy:
+    # Caddy with the Cloudflare DNS module, for the DNS-01 challenge (Caddyfile).
+    # The same image as ../mediator's and ../develop's.
+    build:
+      dockerfile_inline: |
+        FROM caddy:2-builder-alpine AS builder
+        RUN xcaddy build --with github.com/caddy-dns/cloudflare
+        FROM caddy:2-alpine
+        COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+    image: almena-caddy:dev
+    restart: unless-stopped
+    environment:
+      # The Caddyfile's site.
+      AGENT_DOMAIN: ${AGENT_DOMAIN:-}
+      # Writes the challenge's TXT record in the domain's Cloudflare zone.
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and the ACME account, on the host (git-ignored) so they
+      # survive removing the containers and their volumes.
+      - ./caddy:/data
+      - caddy-config:/config
+    depends_on:
+      agent:
+        condition: service_healthy
+
+volumes:
+  caddy-config:

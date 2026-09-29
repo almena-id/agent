@@ -74,7 +74,7 @@ tasks:
       - docker compose build
 
   up:
-    desc: Start the agent in Docker (detached) and wait until healthy
+    desc: Start the agent and Caddy (HTTPS) in Docker (detached) and wait until healthy
     cmds:
       - docker compose up --build --detach --wait
 
@@ -87,6 +87,11 @@ tasks:
     desc: Follow the agent's container logs
     cmds:
       - docker compose logs --follow agent
+
+  logs:caddy:
+    desc: Follow Caddy's container logs
+    cmds:
+      - docker compose logs --follow caddy
 
   health:
     desc: Query the running agent's liveness endpoint

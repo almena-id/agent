@@ -22,3 +22,6 @@ htmlcov/
 
 # Task checksums
 .task/
+
+# Caddy's certificates and ACME account (compose.yml)
+/caddy/
