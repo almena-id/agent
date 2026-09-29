@@ -1,0 +1,129 @@
+# https://taskfile.dev
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  IMAGE: almena-agent:dev
+  PORT: '{{.AGENT_PORT | default "8100"}}'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  init:
+    desc: Create .env from .env.example (an existing .env is left untouched)
+    cmds:
+      - cp .env.example .env
+    status:
+      - test -f .env
+
+  install:
+    desc: Install the dependencies, dev tools included, into .venv
+    cmds:
+      - uv sync --locked
+    sources:
+      - pyproject.toml
+      - uv.lock
+
+  dev:
+    desc: Run the agent locally with auto-reload
+    deps: [install]
+    env:
+      AGENT_LOG_LEVEL: '{{.AGENT_LOG_LEVEL | default "DEBUG"}}'
+    cmds:
+      - uv run fastapi dev src/almena_agent/main.py --port {{.PORT}}
+
+  test:
+    desc: Run the test suite (Claude is faked; nothing is billed)
+    deps: [install]
+    env:
+      AGENT_ENVIRONMENT: test
+      AGENT_PUBLIC_URL: https://agent.almena.id
+      AGENT_NAME: Almena Agent
+    cmds:
+      - uv run pytest {{.CLI_ARGS}}
+
+  fmt:
+    desc: Format the code and apply safe lint fixes
+    deps: [install]
+    cmds:
+      - uv run ruff format
+      - uv run ruff check --fix
+
+  lint:
+    desc: Check formatting, lint and types
+    deps: [install]
+    cmds:
+      - uv run ruff format --check
+      - uv run ruff check
+      - uv run mypy
+
+  check:
+    desc: Everything that must pass before finishing a change (lint + test)
+    cmds:
+      - task: lint
+      - task: test
+
+  build:
+    desc: Build the Docker image
+    cmds:
+      - docker compose build
+
+  up:
+    desc: Start the agent in Docker (detached) and wait until healthy
+    cmds:
+      - docker compose up --build --detach --wait
+
+  down:
+    desc: Stop and remove the Docker containers
+    cmds:
+      - docker compose down
+
+  logs:
+    desc: Follow the agent's container logs
+    cmds:
+      - docker compose logs --follow agent
+
+  health:
+    desc: Query the running agent's liveness endpoint
+    cmds:
+      - curl --fail --silent --show-error http://localhost:{{.PORT}}/health
+      - echo
+    silent: true
+
+  card:
+    desc: Print the running agent's A2A agent card
+    cmds:
+      - curl --fail --silent --show-error http://localhost:{{.PORT}}/.well-known/agent-card.json
+      - echo
+    silent: true
+
+  ask:
+    desc: 'Send the running agent a message over A2A JSON-RPC (task ask -- "What is Almena?")'
+    requires:
+      vars: [CLI_ARGS]
+    cmds:
+      - >-
+        curl --fail --silent --show-error http://localhost:{{.PORT}}/a2a/jsonrpc
+        -H 'Content-Type: application/json' -H 'A2A-Version: 1.0'
+        -d "$(jq -n --arg text '{{.CLI_ARGS}}' --arg id "$(uuidgen)"
+        '{jsonrpc:"2.0",id:1,method:"SendMessage",params:{message:{messageId:$id,role:"ROLE_USER",parts:[{text:$text}]}}}')"
+        | jq .
+    silent: true
+
+  openapi:
+    desc: Print the running agent's OpenAPI document
+    cmds:
+      - curl --fail --silent --show-error http://localhost:{{.PORT}}/openapi.json
+    silent: true
+
+  clean:
+    desc: Remove the virtualenv, caches and the local Docker image
+    cmds:
+      - rm -rf .venv .pytest_cache .mypy_cache .ruff_cache
+      - find . -name __pycache__ -type d -prune -exec rm -rf {} +
+      - docker image rm -f {{.IMAGE}}
