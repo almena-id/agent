@@ -75,7 +75,7 @@ not shared between replicas.
 | `AGENT_NAME` | `Almena Agent` | The agent's name in its card |
 | `AGENT_DESCRIPTION` | `The AI agent of the Almena Network.` | Its description in the card |
 | `AGENT_PROVIDER_ORGANIZATION` | `Almena Network` | Who runs it |
-| `AGENT_PROVIDER_URL` | `https://almena.network` | Their site |
+| `AGENT_PROVIDER_URL` | `https://almena.id` | Their site |
 | `ANTHROPIC_API_KEY` | — | Claude API key (read by the Anthropic SDK) |
 | `AGENT_MODEL` | `claude-opus-5-5` | Claude model |
 | `AGENT_EFFORT` | `high` | `low`, `medium`, `high`, `xhigh` or `max` |

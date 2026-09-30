@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     name: str = "Almena Agent"
     description: str = "The AI agent of the Almena Network."
     provider_organization: str = "Almena Network"
-    provider_url: str = "https://almena.network"
+    provider_url: str = "https://almena.id"
 
     # Claude: the model, how hard it thinks, and the most it writes per reply.
     model: str = "claude-opus-5-5"

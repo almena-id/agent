@@ -15,7 +15,7 @@ services:
       AGENT_NAME: ${AGENT_NAME:-Almena Agent}
       AGENT_DESCRIPTION: ${AGENT_DESCRIPTION:-The AI agent of the Almena Network.}
       AGENT_PROVIDER_ORGANIZATION: ${AGENT_PROVIDER_ORGANIZATION:-Almena Network}
-      AGENT_PROVIDER_URL: ${AGENT_PROVIDER_URL:-https://almena.network}
+      AGENT_PROVIDER_URL: ${AGENT_PROVIDER_URL:-https://almena.id}
       # Docker's networks: trust X-Forwarded-* from a reverse proxy on them.
       AGENT_FORWARDED_ALLOW_IPS: ${AGENT_FORWARDED_ALLOW_IPS:-172.16.0.0/12}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
