@@ -24,6 +24,13 @@ task --list  # everything else
 
 With `ANTHROPIC_API_KEY` empty, `task dev` uses an `ant auth login` profile.
 
+Every merge into `main` publishes the image `ghcr.io/almena-id/agent`
+(amd64 and arm64) with a `year.month.sequence` version (e.g. `2026.10.1`,
+the sequence restarting each month), also tagged `latest` and `sha-<commit>`;
+the commit gets the git tag `v<version>`. The image reports that version
+(`ALMENA_VERSION`); outside it, the package's. See
+[.github/workflows/docker.yml](.github/workflows/docker.yml).
+
 `task up` also starts Caddy, which serves the agent at `https://$AGENT_DOMAIN`
 (`agent.almena.id` in `.env.example`) with a Let's Encrypt certificate. Point
 the name at this machine (in `/etc/hosts` for development); the certificate
@@ -40,7 +47,7 @@ Edit) in `.env`. The agent still answers at `http://localhost:8100`.
 | GET | `/` | The home page for browsers (HTML, in teal): status, version, A2A protocol and the agent card's URL |
 | GET | `/fonts/{name}` | The home page's typefaces (Chakra Petch, Inter, JetBrains Mono; woff2) |
 | GET | `/.well-known/security.txt` | Where to report a vulnerability ([RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)): this repository's private advisories; `Expires` stays 180 days ahead |
-| GET | `/health` | Liveness |
+| GET | `/health` | Liveness and the running version |
 | GET | `/docs`, `/openapi.json` | API reference (not in `production`) |
 
 Requests to the A2A bindings carry the `A2A-Version: 1.0` header.
