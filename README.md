@@ -1,6 +1,6 @@
 # Almena Agent
 
-The AI agent of the Almena Network, served at `https://agent.almena.id`. It
+The AI agent of Almena ID, served at `https://agent.almena.id`. It
 answers with Claude (Anthropic) and is reached by other agents over the
 [Agent2Agent (A2A) protocol](https://a2a-protocol.org) 1.0, through its agent
 card and two bindings: JSON-RPC and HTTP+JSON (REST).
@@ -76,8 +76,8 @@ not shared between replicas.
 | `CLOUDFLARE_API_TOKEN` | — | Caddy's DNS-01 challenge (Zone / DNS / Edit) |
 | `AGENT_PUBLIC_URL` | `https://agent.almena.id` | Public origin; the agent card's endpoints are under it |
 | `AGENT_NAME` | `Almena Agent` | The agent's name in its card |
-| `AGENT_DESCRIPTION` | `The AI agent of the Almena Network.` | Its description in the card |
-| `AGENT_PROVIDER_ORGANIZATION` | `Almena Network` | Who runs it |
+| `AGENT_DESCRIPTION` | `The AI agent of Almena ID.` | Its description in the card |
+| `AGENT_PROVIDER_ORGANIZATION` | `Almena ID` | Who runs it |
 | `AGENT_PROVIDER_URL` | `https://almena.id` | Their site |
 | `ANTHROPIC_API_KEY` | — | Claude API key (read by the Anthropic SDK) |
 | `AGENT_MODEL` | `claude-opus-5-5` | Claude model |

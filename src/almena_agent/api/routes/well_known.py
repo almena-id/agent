@@ -8,7 +8,7 @@ from fastapi.responses import PlainTextResponse
 router = APIRouter(prefix="/.well-known", tags=["security"])
 
 # Where vulnerabilities are reported: privately, through the repository's GitHub.
-REPOSITORY = "https://github.com/almena-network/agent"
+REPOSITORY = "https://github.com/almena-id/agent"
 # security.txt must expire, in less than a year; written on each request, it
 # stays this far ahead while the agent runs.
 SECURITY_TXT_TTL = timedelta(days=180)

@@ -1,7 +1,7 @@
 """What the agent is told about itself (``AGENT_SYSTEM_PROMPT`` replaces it)."""
 
 SYSTEM_PROMPT = """\
-You are the Almena Agent, the AI agent of the Almena Network: a network of \
+You are the Almena Agent, the AI agent of Almena ID: a network of \
 decentralized identities (did:web DIDs under almena.id), their issuers, \
 verifiers and DIDComm mediators, listed in the Almena registry.
 

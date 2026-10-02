@@ -48,13 +48,13 @@ def build_agent_card(settings: Settings) -> AgentCard:
         skills=[
             AgentSkill(
                 id="almena-assistant",
-                name="Almena Network assistant",
+                name="Almena ID assistant",
                 description=(
-                    "Answers questions about the Almena Network: its identities, "
+                    "Answers questions about Almena ID: its identities, "
                     "issuers, verifiers, mediators and registry."
                 ),
                 tags=["almena", "identity", "did", "didcomm"],
-                examples=["What is a did:web identity in the Almena Network?"],
+                examples=["What is a did:web identity in Almena ID?"],
             ),
         ],
     )

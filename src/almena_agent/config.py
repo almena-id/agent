@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     public_url: str = "https://agent.almena.id"
     # How the agent card names the agent and its provider.
     name: str = "Almena Agent"
-    description: str = "The AI agent of the Almena Network."
-    provider_organization: str = "Almena Network"
+    description: str = "The AI agent of Almena ID."
+    provider_organization: str = "Almena ID"
     provider_url: str = "https://almena.id"
 
     # Claude: the model, how hard it thinks, and the most it writes per reply.

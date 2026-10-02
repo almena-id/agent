@@ -1,7 +1,7 @@
 [project]
 name = "almena-agent"
 version = "0.1.0"
-description = "AI agent of the Almena Network, reachable over the Agent2Agent (A2A) protocol"
+description = "AI agent of Almena ID, reachable over the Agent2Agent (A2A) protocol"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.13"
