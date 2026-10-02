@@ -37,6 +37,8 @@ Edit) in `.env`. The agent still answers at `http://localhost:8100`.
 | GET | `/.well-known/agent-card.json` | The A2A agent card: name, skills, capabilities and the endpoints below, under `AGENT_PUBLIC_URL` |
 | POST | `/a2a/jsonrpc` | A2A JSON-RPC 2.0 binding (`SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask`…) |
 | * | `/a2a/rest/…` | A2A HTTP+JSON binding (`POST /message:send`, `POST /message:stream`, `GET /tasks/{id}`…) |
+| GET | `/` | The home page for browsers (HTML, in teal): status, version, A2A protocol and the agent card's URL |
+| GET | `/fonts/{name}` | The home page's typefaces (Chakra Petch, Inter, JetBrains Mono; woff2) |
 | GET | `/health` | Liveness |
 | GET | `/docs`, `/openapi.json` | API reference (not in `production`) |
 

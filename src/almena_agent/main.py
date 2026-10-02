@@ -1,11 +1,11 @@
-"""FastAPI application: the health probe and the A2A interface."""
+"""FastAPI application: the home page, the health probe and the A2A interface."""
 
 from fastapi import FastAPI
 from scalar_fastapi import add_scalar_reference
 
 from almena_agent import __version__
 from almena_agent.a2a.routes import add_a2a_routes
-from almena_agent.api.routes import health
+from almena_agent.api.routes import health, home
 from almena_agent.config import get_settings
 from almena_agent.llm import Model, get_model
 
@@ -26,6 +26,7 @@ def create_app(model: Model | None = None) -> FastAPI:
     )
     if settings.docs_enabled:
         add_scalar_reference(app, route="/docs")
+    app.include_router(home.router)
     app.include_router(health.router)
     add_a2a_routes(app, settings, model or get_model())
     return app
