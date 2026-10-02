@@ -28,11 +28,7 @@ tests/               pytest (async, httpx ASGITransport); conftest's FakeModel s
 
 - Teal `#0fa3a3` is the agent's identity: `--brand` in `assets/home.css` and
   `BRAND` in `api/routes/home.py` (the favicon), carried by the mark in the header
-  and footer. Green carries the status only. The identity colours across Almena:
-  status cyan `#3fe0ff`, catalog blue `#2563eb`, registry green `#1f9d55`,
-  mediator magenta `#d63384`, landing orange `#eb7229`, docu yellow `#f2b705`,
-  api red `#e0413a`, agent teal `#0fa3a3`, the wallet the person's choice
-  (orange by default).
+  and footer. Green carries the status only.
 
 - Everything is written in English: code, comments, docs, commit messages.
 - Use `task` for everything (`task --list`); `task check` must pass before finishing.
