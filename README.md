@@ -39,6 +39,7 @@ Edit) in `.env`. The agent still answers at `http://localhost:8100`.
 | * | `/a2a/rest/…` | A2A HTTP+JSON binding (`POST /message:send`, `POST /message:stream`, `GET /tasks/{id}`…) |
 | GET | `/` | The home page for browsers (HTML, in teal): status, version, A2A protocol and the agent card's URL |
 | GET | `/fonts/{name}` | The home page's typefaces (Chakra Petch, Inter, JetBrains Mono; woff2) |
+| GET | `/.well-known/security.txt` | Where to report a vulnerability ([RFC 9116](https://www.rfc-editor.org/rfc/rfc9116)): this repository's private advisories; `Expires` stays 180 days ahead |
 | GET | `/health` | Liveness |
 | GET | `/docs`, `/openapi.json` | API reference (not in `production`) |
 

@@ -5,7 +5,7 @@ from scalar_fastapi import add_scalar_reference
 
 from almena_agent import __version__
 from almena_agent.a2a.routes import add_a2a_routes
-from almena_agent.api.routes import health, home
+from almena_agent.api.routes import health, home, well_known
 from almena_agent.config import get_settings
 from almena_agent.llm import Model, get_model
 
@@ -28,6 +28,7 @@ def create_app(model: Model | None = None) -> FastAPI:
         add_scalar_reference(app, route="/docs")
     app.include_router(home.router)
     app.include_router(health.router)
+    app.include_router(well_known.router)
     add_a2a_routes(app, settings, model or get_model())
     return app
 

@@ -18,7 +18,7 @@ src/almena_agent/
   a2a/executor.py    `ClaudeAgentExecutor`: message → task → streamed artifact → final state
   a2a/routes.py      mounts the card, JSON-RPC and REST routes (a2a-sdk) on the app
   api/routes/        plain HTTP routes outside A2A (health.py; home.py, the browser page
-                     at `/` and its typefaces at `/fonts/`)
+                     at `/` and its typefaces at `/fonts/`; well_known.py, security.txt)
   assets/            home.html (a `string.Template`), home.css and the portals'
                      typefaces (`fonts/`, SIL OFL, licences beside them)
 tests/               pytest (async, httpx ASGITransport); conftest's FakeModel stands in for Claude
