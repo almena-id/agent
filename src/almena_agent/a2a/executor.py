@@ -8,6 +8,7 @@ before them.
 """
 
 import asyncio
+import hashlib
 import logging
 import uuid
 from collections import defaultdict
@@ -21,6 +22,7 @@ from anthropic.types.beta import BetaMessageParam
 
 from almena_agent.conversations import Conversations
 from almena_agent.llm import Model, ModelUnavailable
+from almena_agent.registry import Registry, RegistryRefused, RegistryUnavailable, Toolbox
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +30,12 @@ RESPONSE_ARTIFACT = "response"
 
 
 class ClaudeAgentExecutor(AgentExecutor):
-    def __init__(self, model: Model, conversations: Conversations) -> None:
+    def __init__(
+        self, model: Model, conversations: Conversations, registry: Registry | None = None
+    ) -> None:
         self._model = model
         self._conversations = conversations
+        self._registry = registry
         # One message at a time per conversation, so turns stay in order.
         self._locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
@@ -49,12 +54,32 @@ class ClaudeAgentExecutor(AgentExecutor):
             await updater.reject(self._say(updater, "Send the request as text."))
             return
 
+        token = _bearer(context)
+        owner = hashlib.sha256(token.encode()).hexdigest() if token else ""
+
         async with self._locks[task.context_id]:
+            if not self._conversations.belongs_to(task.context_id, owner):
+                await updater.reject(
+                    self._say(updater, "This conversation belongs to another caller.")
+                )
+                return
             if self._conversations.is_full(task.context_id):
                 await updater.reject(
                     self._say(updater, "This conversation is full: start a new context.")
                 )
                 return
+            toolbox: Toolbox | None = None
+            if token and self._registry is not None:
+                try:
+                    toolbox = await self._registry.open(token)
+                except RegistryRefused:
+                    await updater.reject(
+                        self._say(updater, "The registry does not accept this token.")
+                    )
+                    return
+                except RegistryUnavailable:
+                    # The agent can still converse; it says so if it needs the registry.
+                    logger.exception("The registry could not be reached")
             await updater.start_work()
             user: BetaMessageParam = {"role": "user", "content": text}
             history = [*self._conversations.history(task.context_id), user]
@@ -72,7 +97,7 @@ class ClaudeAgentExecutor(AgentExecutor):
                 first = False
 
             try:
-                reply = await self._model.reply(history, on_text)
+                reply = await self._model.reply(history, on_text, toolbox)
             except ModelUnavailable:
                 # The cause is logged, never sent: it can hold internal details.
                 logger.exception("Claude could not answer in context %s", task.context_id)
@@ -82,9 +107,7 @@ class ClaudeAgentExecutor(AgentExecutor):
                 logger.info("Claude declined a request in context %s", task.context_id)
                 await updater.reject(self._say(updater, "The agent cannot help with this request."))
                 return
-            self._conversations.record(
-                task.context_id, [user, {"role": "assistant", "content": reply.content}]
-            )
+            self._conversations.record(task.context_id, owner, [user, *reply.turns])
             await updater.complete()
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
@@ -97,3 +120,10 @@ class ClaudeAgentExecutor(AgentExecutor):
     @staticmethod
     def _say(updater: TaskUpdater, text: str) -> Message:
         return updater.new_agent_message([new_text_part(text)])
+
+
+def _bearer(context: RequestContext) -> str | None:
+    """The registry token the request carries (``Authorization: Bearer``), if any."""
+    headers = context.call_context.state.get("headers", {})
+    scheme, _, token = str(headers.get("authorization", "")).partition(" ")
+    return token.strip() or None if scheme.lower() == "bearer" else None

@@ -24,6 +24,8 @@ services:
       AGENT_MAX_TOKENS: ${AGENT_MAX_TOKENS:-64000}
       AGENT_SYSTEM_PROMPT: ${AGENT_SYSTEM_PROMPT:-}
       AGENT_HISTORY_TURNS: ${AGENT_HISTORY_TURNS:-50}
+      AGENT_REGISTRY_MCP_URL: ${AGENT_REGISTRY_MCP_URL-https://api.almena.id/mcp}
+      AGENT_MAX_TOOL_ROUNDS: ${AGENT_MAX_TOOL_ROUNDS:-20}
 
   caddy:
     # Caddy with the Cloudflare DNS module, for the DNS-01 challenge (Caddyfile).

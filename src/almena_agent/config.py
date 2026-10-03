@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     # Earlier turns of a conversation (A2A context) kept and sent back to Claude.
     history_turns: int = Field(default=50, gt=0)
 
+    # The registry API's MCP endpoint: its tools, used with each caller's own
+    # registry token (empty: no tools, the agent only converses).
+    registry_mcp_url: str = "https://api.almena.id/mcp"
+    # Rounds of tool calls one reply may take before it must answer.
+    max_tool_rounds: int = Field(default=20, gt=0)
+
     @property
     def docs_enabled(self) -> bool:
         return self.environment != "production"

@@ -8,9 +8,10 @@ from almena_agent.a2a.routes import add_a2a_routes
 from almena_agent.api.routes import health, home, well_known
 from almena_agent.config import get_settings
 from almena_agent.llm import Model, get_model
+from almena_agent.registry import McpRegistry, Registry
 
 
-def create_app(model: Model | None = None) -> FastAPI:
+def create_app(model: Model | None = None, registry: Registry | None = None) -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title=settings.name,
@@ -29,7 +30,9 @@ def create_app(model: Model | None = None) -> FastAPI:
     app.include_router(home.router)
     app.include_router(health.router)
     app.include_router(well_known.router)
-    add_a2a_routes(app, settings, model or get_model())
+    if registry is None and settings.registry_mcp_url:
+        registry = McpRegistry(settings.registry_mcp_url)
+    add_a2a_routes(app, settings, model or get_model(), registry)
     return app
 
 

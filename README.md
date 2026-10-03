@@ -57,7 +57,8 @@ Requests to the A2A bindings carry the `A2A-Version: 1.0` header.
 Each message opens a task. Claude's reply streams into it as one text
 artifact (`response`), chunk by chunk under `SendStreamingMessage`; the task
 ends `COMPLETED`; `REJECTED` when the message has no text, Claude declines
-it, or the conversation is full; or `FAILED` when Claude cannot be reached
+it, or the conversation is full, it belongs to another caller or the registry
+refuses the caller's token; or `FAILED` when Claude cannot be reached
 (the cause goes to the log, not to the peer). Messages sharing a `contextId` are one
 conversation: Claude sees the turns before (up to `AGENT_HISTORY_TURNS`).
 
@@ -67,6 +68,33 @@ declines for policy reasons is retried on its fallback model within the call.
 
 Tasks and conversations are kept in memory: a restart loses them, and they are
 not shared between replicas.
+
+### The registry's tools
+
+A message sent with the caller's Almena registry token, `Authorization: Bearer
+almena_…` (an API token made in the registry portal or with `almena`), gets the
+registry's tools: the agent is an MCP client of the API's endpoint
+(`AGENT_REGISTRY_MCP_URL`) and acts as that token's account, so it sees and
+does only what the account may, checked by the API as any other request. The
+card declares the token as the optional `almenaRegistry` scheme, and the
+`almena-registry` skill. Claude calls the tools as it needs them, up to
+`AGENT_MAX_TOOL_ROUNDS` rounds per reply (the last must answer); what it says
+between rounds streams into the same artifact. Changes that end in a signature
+(publishing, signing an identity, issuing) only return the wallet request,
+which the signer approves in their wallet.
+
+Without a token there are no tools and the agent only converses; a token the
+registry refuses rejects the task; an unreachable registry leaves the agent
+without tools for that message. A context stays with whoever started it (by a
+hash of the token, or no token): another caller continuing it is rejected,
+since its history holds what the registry told the first.
+
+```bash
+curl -s https://agent.almena.id/a2a/rest/message:send \
+  -H "A2A-Version: 1.0" -H "Authorization: Bearer $ALMENA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": {"messageId": "1", "role": "ROLE_USER", "parts": [{"text": "What does my tenant still need?"}]}}'
+```
 
 ## Configuration
 
@@ -92,6 +120,8 @@ not shared between replicas.
 | `AGENT_MAX_TOKENS` | `64000` | Most tokens per reply |
 | `AGENT_SYSTEM_PROMPT` | — | Replaces the built-in prompt (`src/almena_agent/prompts.py`) |
 | `AGENT_HISTORY_TURNS` | `50` | Exchanges a conversation holds |
+| `AGENT_REGISTRY_MCP_URL` | `https://api.almena.id/mcp` | The registry API's MCP endpoint, used with each caller's token (empty: no tools) |
+| `AGENT_MAX_TOOL_ROUNDS` | `20` | Rounds of tool calls one reply may take before it must answer |
 
 ## Deployment
 

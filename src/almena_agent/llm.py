@@ -4,16 +4,24 @@
 its place (``get_model`` is the dependency to override).
 """
 
+import asyncio
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Protocol
+from typing import Any, Protocol
 
-from anthropic import AnthropicError, AsyncAnthropic
-from anthropic.types.beta import BetaContentBlock, BetaMessageParam
+from anthropic import AnthropicError, AsyncAnthropic, Omit, omit
+from anthropic.types.beta import (
+    BetaMessage,
+    BetaMessageParam,
+    BetaToolChoiceParam,
+    BetaToolResultBlockParam,
+    BetaToolUseBlock,
+)
 
 from almena_agent.config import Settings, get_settings
 from almena_agent.prompts import SYSTEM_PROMPT
+from almena_agent.registry import Toolbox
 
 # Server-side fallback: when the model declines for policy reasons, the API
 # retries the same request on its default fallback model within the call.
@@ -28,19 +36,26 @@ class ModelUnavailable(Exception):
 
 @dataclass(frozen=True)
 class Reply:
-    """A finished assistant turn."""
+    """A finished answer to the last user turn."""
 
-    # Every block as returned (thinking included), to send back unchanged
-    # on the next turn of the conversation.
-    content: Sequence[BetaContentBlock]
+    # The turns that answer it, in order: Claude's (every block as returned,
+    # thinking included) and, between them, the tool results it was given.
+    # They go back unchanged on the next message of the conversation.
+    turns: Sequence[BetaMessageParam]
     text: str
     # The model (and its fallback, if any) declined the request.
     refused: bool
 
 
 class Model(Protocol):
-    async def reply(self, messages: Sequence[BetaMessageParam], on_text: OnText) -> Reply:
-        """Answers the conversation's last user turn, streaming its text to ``on_text``.
+    async def reply(
+        self,
+        messages: Sequence[BetaMessageParam],
+        on_text: OnText,
+        toolbox: Toolbox | None = None,
+    ) -> Reply:
+        """Answers the conversation's last user turn, streaming its text to ``on_text``,
+        using the toolbox's tools as it needs them.
 
         Raises ``ModelUnavailable`` when the model cannot be reached.
         """
@@ -54,33 +69,101 @@ class Claude:
         self._client = client
         self._system = settings.system_prompt or SYSTEM_PROMPT
 
-    async def reply(self, messages: Sequence[BetaMessageParam], on_text: OnText) -> Reply:
+    async def reply(
+        self,
+        messages: Sequence[BetaMessageParam],
+        on_text: OnText,
+        toolbox: Toolbox | None = None,
+    ) -> Reply:
         try:
-            return await self._reply(messages, on_text)
+            return await self._reply(messages, on_text, toolbox)
         except AnthropicError as error:
             # The SDK has already retried what is worth retrying (429, 5xx, network).
             raise ModelUnavailable(str(error)) from error
 
-    async def _reply(self, messages: Sequence[BetaMessageParam], on_text: OnText) -> Reply:
+    async def _reply(
+        self, messages: Sequence[BetaMessageParam], on_text: OnText, toolbox: Toolbox | None
+    ) -> Reply:
+        conversation = list(messages)
+        turns: list[BetaMessageParam] = []
+        texts: list[str] = []
+        rounds = self._settings.max_tool_rounds
+        for round_ in range(1, rounds + 1):
+            # The last round may not call tools: it has to answer with what it has.
+            last = round_ == rounds
+            message = await self._stream(
+                conversation, on_text, toolbox, separate=bool(texts), last=last
+            )
+            assistant: BetaMessageParam = {"role": "assistant", "content": message.content}
+            turns.append(assistant)
+            conversation.append(assistant)
+            text = "".join(block.text for block in message.content if block.type == "text")
+            if text:
+                texts.append(text)
+            if message.stop_reason == "refusal":
+                return Reply(turns=turns, text="\n\n".join(texts), refused=True)
+            uses = [block for block in message.content if block.type == "tool_use"]
+            if message.stop_reason != "tool_use" or toolbox is None or not uses:
+                break
+            results: BetaMessageParam = {
+                "role": "user",
+                "content": await asyncio.gather(*(_run(toolbox, use) for use in uses)),
+            }
+            turns.append(results)
+            conversation.append(results)
+        return Reply(turns=turns, text="\n\n".join(texts), refused=False)
+
+    async def _stream(
+        self,
+        messages: list[BetaMessageParam],
+        on_text: OnText,
+        toolbox: Toolbox | None,
+        *,
+        separate: bool,
+        last: bool,
+    ) -> BetaMessage:
         if self._client is None:
             self._client = AsyncAnthropic()
+        tool_choice: BetaToolChoiceParam | Omit = omit
+        if toolbox is not None and last:
+            tool_choice = {"type": "none"}
         async with self._client.beta.messages.stream(
             model=self._settings.model,
             max_tokens=self._settings.max_tokens,
             system=self._system,
-            messages=list(messages),
+            messages=messages,
+            tools=list(toolbox.tools) if toolbox is not None else omit,
+            tool_choice=tool_choice,
             thinking={"type": "adaptive"},
             output_config={"effort": self._settings.effort},
-            # Caches the system prompt and the conversation so far.
+            # Caches the tools, the system prompt and the conversation so far.
             cache_control={"type": "ephemeral"},
             betas=[FALLBACK_BETA],
             fallbacks="default",
         ) as stream:
+            first = True
             async for text in stream.text_stream:
+                # Text from an earlier round of the same reply ends a paragraph.
+                if first and separate:
+                    text = f"\n\n{text}"
+                first = False
                 await on_text(text)
-            message = await stream.get_final_message()
-        text = "".join(block.text for block in message.content if block.type == "text")
-        return Reply(content=message.content, text=text, refused=message.stop_reason == "refusal")
+            return await stream.get_final_message()
+
+
+async def _run(toolbox: Toolbox, use: BetaToolUseBlock) -> BetaToolResultBlockParam:
+    arguments: Any = use.input
+    if not isinstance(arguments, dict):
+        outcome_text, is_error = "The tool's input must be a JSON object.", True
+    else:
+        outcome = await toolbox.call(use.name, arguments)
+        outcome_text, is_error = outcome.text, outcome.is_error
+    return {
+        "type": "tool_result",
+        "tool_use_id": use.id,
+        "content": outcome_text,
+        "is_error": is_error,
+    }
 
 
 @lru_cache

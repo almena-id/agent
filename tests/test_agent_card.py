@@ -12,4 +12,8 @@ async def test_agent_card_advertises_the_public_endpoints(client: AsyncClient) -
         "JSONRPC": "https://agent.almena.id/a2a/jsonrpc",
         "HTTP+JSON": "https://agent.almena.id/a2a/rest",
     }
-    assert [skill["id"] for skill in card["skills"]] == ["almena-assistant"]
+    assert [skill["id"] for skill in card["skills"]] == ["almena-assistant", "almena-registry"]
+    scheme = card["securitySchemes"]["almenaRegistry"]["httpAuthSecurityScheme"]
+    assert scheme["scheme"] == "Bearer"
+    # The token is optional: nothing requires it.
+    assert "securityRequirements" not in card

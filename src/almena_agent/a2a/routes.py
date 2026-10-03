@@ -15,12 +15,15 @@ from almena_agent.a2a.executor import ClaudeAgentExecutor
 from almena_agent.config import Settings
 from almena_agent.conversations import Conversations
 from almena_agent.llm import Model
+from almena_agent.registry import Registry
 
 
-def add_a2a_routes(app: FastAPI, settings: Settings, model: Model) -> None:
+def add_a2a_routes(
+    app: FastAPI, settings: Settings, model: Model, registry: Registry | None
+) -> None:
     card = build_agent_card(settings)
     handler = DefaultRequestHandler(
-        agent_executor=ClaudeAgentExecutor(model, Conversations(settings.history_turns)),
+        agent_executor=ClaudeAgentExecutor(model, Conversations(settings.history_turns), registry),
         # Tasks live in memory: lost on restart, not shared between replicas.
         task_store=InMemoryTaskStore(),
         agent_card=card,

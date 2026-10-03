@@ -9,11 +9,17 @@ from a2a.types import (
     AgentInterface,
     AgentProvider,
     AgentSkill,
+    HTTPAuthSecurityScheme,
+    SecurityScheme,
 )
 from a2a.utils.constants import PROTOCOL_VERSION_CURRENT, TransportProtocol
 
 from almena_agent import __version__
 from almena_agent.config import Settings
+
+# The caller's Almena registry token, optional: with it the agent operates the
+# registry as the token's account; without it, it only converses.
+REGISTRY_SCHEME = "almenaRegistry"
 
 # Where the two A2A bindings are mounted, under the public origin.
 JSONRPC_PATH = "/a2a/jsonrpc"
@@ -43,6 +49,18 @@ def build_agent_card(settings: Settings) -> AgentCard:
             ),
         ],
         capabilities=AgentCapabilities(streaming=True, push_notifications=False),
+        security_schemes={
+            REGISTRY_SCHEME: SecurityScheme(
+                http_auth_security_scheme=HTTPAuthSecurityScheme(
+                    scheme="Bearer",
+                    bearer_format="Almena registry API token (almena_…)",
+                    description=(
+                        "Optional. The agent operates the Almena registry as this "
+                        "token's account; without it, it only answers questions."
+                    ),
+                )
+            )
+        },
         default_input_modes=["text/plain"],
         default_output_modes=["text/plain", "text/markdown"],
         skills=[
@@ -55,6 +73,21 @@ def build_agent_card(settings: Settings) -> AgentCard:
                 ),
                 tags=["almena", "identity", "did", "didcomm"],
                 examples=["What is a did:web identity in Almena ID?"],
+            ),
+            AgentSkill(
+                id="almena-registry",
+                name="Almena registry operator",
+                description=(
+                    "Operates the caller's tenants in the Almena registry with their "
+                    "registry token: reads and sets up issuers, verifiers, mediators, "
+                    "identities, domains, forms and applications, and prepares the "
+                    "wallet requests their signers approve."
+                ),
+                tags=["almena", "registry", "mcp"],
+                examples=[
+                    "What does my tenant still need set up?",
+                    "Register an issuer called Town Hall and tell me what is left to publish it.",
+                ],
             ),
         ],
     )
