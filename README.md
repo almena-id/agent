@@ -19,6 +19,7 @@ task dev     # the agent on http://localhost:8100, with auto-reload
 task card    # its agent card
 task ask -- "What is a did:web identity?"
 task up      # the same, in Docker, behind Caddy at https://$AGENT_DOMAIN
+task up:no-caddy  # the same without Caddy, behind ../develop's
 task --list  # everything else
 ```
 
@@ -128,7 +129,8 @@ curl -s https://agent.almena.id/a2a/rest/message:send \
 The container listens on 8100 behind a TLS-terminating proxy for
 `agent.almena.id` that forwards everything to it: this project's Caddy
 (`Caddyfile`) when it runs alone; with the whole network, `../develop`'s,
-whose `task up` stops this one and serves `AGENT_DOMAIN` in its place.
+which serves `AGENT_DOMAIN` in its place: both take ports 80 and 443, so start
+the agent with `task up:no-caddy`, which leaves this one out.
 
 ## License
 
