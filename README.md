@@ -81,8 +81,9 @@ card declares the token as the optional `almenaRegistry` scheme, and the
 `almena-registry` skill. Claude calls the tools as it needs them, up to
 `AGENT_MAX_TOOL_ROUNDS` rounds per reply (the last must answer); what it says
 between rounds streams into the same artifact. Changes that end in a signature
-(publishing, signing an identity, issuing) only return the wallet request,
-which the signer approves in their wallet.
+(signing an identity, issuing) only return the wallet request, which the
+signer approves in their wallet; publishing is left to an admin in the portal
+or the CLI.
 
 Without a token there are no tools and the agent only converses; a token the
 registry refuses rejects the task; an unreachable registry leaves the agent
